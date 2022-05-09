@@ -9,10 +9,10 @@ class actionSets(actions):
         self.numActions = numActions
         
 class portAndHosts:
-    def __init__(self, portAddress, numHosts, hostName):
-        self.portAddress = port
+    def __init__(self, portAddress, numHosts, hostNames):
+        self.portAddress = portAddress
         self.numHosts = numHosts
-        self.hostName = hostName
+        self.hostNames = hostNames
 
 def main():
     
@@ -23,10 +23,13 @@ def main():
     print(words[0])
     print(len(words))
     
-    p1 = actions(5561, 5, 'test')
-    print(p1)
-    print(p1.command)
-
+    #Creating default values for port and host
+    defaultportAddress = 'default'
+    defaultnumHosts = 0
+    defaulthostName = 'default'
+    #Initializing port and host class with default values
+    portandhost = portAndHosts(defaultportAddress, defaultnumHosts, defaulthostName)
+    
     #Creating variables for while loop
     arraylength = len(words) - 1
     i = 0
@@ -43,6 +46,23 @@ def main():
             print("is empty line line")
             words.pop(i)
             arraylength = arraylength - 1
+        #Checking if line is port number, and storing port info
+        elif (words[i].startswith('PORT')):
+            portnumber = words[i].split()[2]
+            portandhost.portAddress = portnumber
+            print(words[i])
+            print(portandhost.portAddress)
+            i = i+1
+            arraylength = arraylength - 1
+        #Checking if a line is host info, and storing that info
+        elif (words[i].startswith('HOSTS')):
+            hosts = words[i].split()
+            hosts = hosts[2:len(hosts)]
+            portandhost.hostNames = hosts
+            portandhost.numHosts = len(hosts)
+            print(portandhost.hostNames)
+            print(portandhost.numHosts)
+            i = i+1
         elif (words[i].startswith('\t')):
             print(words[i])
             print("starts with tab")
