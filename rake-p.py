@@ -1,3 +1,5 @@
+import select
+import time
 import socket 
 import base64
 
@@ -12,17 +14,16 @@ class actionSets(actions):
         self.numActions = numActions
         self.actionlist = []
 
-class portAndHosts:
-    def __init__(self, portAddress, numHosts, hostNames):
-        self.portAddress = portAddress
-        self.numHosts = numHosts
-        self.hostNames = hostNames
+
+class host:
+    def __init__(self, hostname, portnumber):
+        self.hostname = hostname
+        self.hostnumber = portnumber
 
 def main():
     
-    
 
-    f = open("Rakefile1", "r")
+    f = open("Rakefile9", "r")
     text = f.read()
     words = text.splitlines()
     #print(words)
@@ -30,6 +31,8 @@ def main():
     #print(len(words))
     actionset = []
     no_sets = 0
+
+    hostset = []
 
     action = []
     remoteactions = []
@@ -40,13 +43,11 @@ def main():
     defaultnumHosts = 0
     defaulthostName = 'default'
     #Initializing port and host class with default values
-    portandhost = portAndHosts(defaultportAddress, defaultnumHosts, defaulthostName)
     
     #Creating variables for while loop
     arraylength = len(words) - 1
-    i = 0
-    j = 0
-    
+    i=0
+
     #Processing lines in while loop below
     while (i < arraylength+1):
         #Removing comment lines
@@ -62,21 +63,21 @@ def main():
         #Checking if line is port number, and storing port info
         elif (words[i].startswith('PORT')):
             portnumber = words[i].split()[2]
-            portandhost.portAddress = portnumber
+            defaultportAddress = int(portnumber)
             #print(words[i])
-            #print(portandhost.portAddress)
-            i = i+1
-            arraylength = arraylength - 1
+            i = i+1 
         #Checking if a line is host info, and storing that info
         elif (words[i].startswith('HOSTS')):
             hosts = words[i].split()
             hosts = hosts[2:len(hosts)]
-            portandhost.hostNames = hosts
-            portandhost.numHosts = len(hosts)
-            #print(portandhost.hostNames)
-            #print(portandhost.numHosts)
+            for j in range(len(hosts)):
+                hsplit = hosts[j].split(':')
+                if (len(hsplit) == 1):
+                    hostset.append(host(hsplit[0], defaultportAddress))
+                elif (len(hsplit) == 2):
+                    hostset.append(host(hsplit[0], int(hsplit[1])))
             i = i+1
-
+        #
         elif (words[i].startswith('actionset')):
             actionset.append(actionSets(0))
             no_sets = no_sets + 1
@@ -100,7 +101,7 @@ def main():
                     actionset[no_sets-1].actionlist.append(actions(words[i][1:],""))
                     action.append(actions(words[i][1:],""))
                 #print(words[i][1:])
-            i = i+1
+            i = i+1   
 
         elif (words[i].startswith('\t\t')):
             files.append(words[i][11:])
@@ -109,28 +110,122 @@ def main():
         else:
             i = i+1
 
+    
+    
 
+        
+    
+    for aset in actionset:
+        for action in aset.actionlist:
+            rd = []
+            socks = []
 
-    for i in range(len(actionset)):
-            
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(("localhost", 9000))
-            if(actionset[i].actionlist[0].files == "")
-                break
-            f1 = open(actionset[i].actionlist[0].files,'r')
+            for h in range(len(hostset)):
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                socks.append(sock)
+                print(hostset[h].hostname)
+                print(hostset[h].hostnumber)
+                sock.connect((hostset[h].hostname, hostset[h].hostnumber))
+                newaction = 'quote\0'
+                message = newaction.encode('ascii')
+                sock.sendall(message)
+                rd.append(sock)
+
+    
+
+            wd = []
+            xd = []
+
+            readready =[]
+            writeready = []
+            xready = []
+
+            lowest = 1000
+
+            while(1):
+                readready, writeready, xready = select.select(rd,[],[])
+                if(len(readready) == len(rd)):
+                    break
+       
+    
+            for read in readready:
+                data = read.recv(1024)
+                message = data.decode('ascii')
+                print(read)
+                quote = int(message[0:2])
+                print(quote)
+                if(quote<lowest):
+                    lowest = quote
+                    executor = read.getpeername()
+                    read.close()
+                else:
+                    read.close()
+
+            print(executor)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect(executor)
+            newfile = 'File: ' + action.files + '\n'
+            f1 = open(action.files,'r')
             fileopen = f1.read()
             message = fileopen.splitlines()
-            newfile = ""
-            newfile += actionset[i].actionlist[0].files + '\n'
-
+    
             for j in range(len(message)):
                 newfile += message[j]+'\n'
+            
             newfile += '\0'
+            
             print(newfile)
-
-
+            
             message_bytes = newfile.encode('ascii')
-            s.sendall(message_bytes)
+            sock.sendall(message_bytes)
+            sock.close()
+        
+
+        
+
+
+
+        #ret = sock.recv(10)
+        #print(ret)
+        #filename = ret.decode('ascii')
+        #TODO get rid of trailing /0 bytes filename = filename[:len(filename)-1]
+        #print(filename)
+        #print(len(ret))
+        #f2 = open(filename, "a")
+        #f2.write("test")
+        #f2.close()
+
+
+
+
+    #for i in range(len(actionset)):
+            
+
+            #for j in range(len(portandhost.hostNames)):
+             #   s.connect((portandhost.hostNames[j], portandhost.portAddress))
+              #  newfile = actionset[i].actionlist[0].command + '\0'
+               # print(newfile)
+               # message_bytes = newfile.encode('ascii')
+               # s.sendall(message_bytes)
+
+            
+
+
+            #f1 = open(actionset[i].actionlist[0].files,'r')
+            #fileopen = f1.read()
+            #message = fileopen.splitlines()
+            #newfile = ""
+            #newfile += actionset[i].actionlist[0].files + '\n'
+
+            #for j in range(len(message)):
+            #    newfile += message[j]+'\n'
+            #newfile += '\0'
+            #print(newfile)
+
+
+            #message_bytes = newfile.encode('ascii')
+            #s.sendall(message_bytes)
+            #data = s.recv(1024)
         
         #for j in range(len(remoteactions)):
          #   message = (remoteactions[j]+'\n').encode('ascii')
@@ -141,6 +236,4 @@ def main():
 
     #print(words)
     #print(len(words))
-
 main()
-    
